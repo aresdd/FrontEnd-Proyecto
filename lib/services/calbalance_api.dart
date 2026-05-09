@@ -217,6 +217,21 @@ class CalBalanceApi {
     return BodyProgressResponse.fromJson(_safeJsonMap(r.body));
   }
 
+  /// Partial update: only keys present in [body] are sent (nulls omitted).
+  Future<BodyProgressResponse> progressUpdate(
+    int id, {
+    double? weightKg,
+    double? bodyFatPercent,
+    double? muscleMassKg,
+  }) async {
+    final body = <String, dynamic>{};
+    if (weightKg != null) body['weightKg'] = weightKg;
+    if (bodyFatPercent != null) body['bodyFatPercent'] = bodyFatPercent;
+    if (muscleMassKg != null) body['muscleMassKg'] = muscleMassKg;
+    final r = await _client.patch('/progress/$id/edit', body: body);
+    return BodyProgressResponse.fromJson(_safeJsonMap(r.body));
+  }
+
   Future<NutritionGoalResponse> goalsCreate({
     required String goalType,
     int? dailyCalories,
@@ -224,6 +239,7 @@ class CalBalanceApi {
     int? carbsG,
     int? fatG,
     String? startDateIso,
+    String? endDateIso,
   }) async {
     final r = await _client.post(
       '/goals/create',
@@ -234,6 +250,7 @@ class CalBalanceApi {
         'carbsG': carbsG,
         'fatG': fatG,
         if (startDateIso != null) 'startDate': startDateIso,
+        if (endDateIso != null) 'endDate': endDateIso,
       },
     );
     return NutritionGoalResponse.fromJson(_safeJsonMap(r.body));
@@ -242,6 +259,47 @@ class CalBalanceApi {
   Future<NutritionGoalResponse> goalsCurrent() async {
     final r = await _client.get('/goals/current');
     return NutritionGoalResponse.fromJson(_safeJsonMap(r.body));
+  }
+
+  Future<NutritionGoalResponse> goalsByDate(String dateIso) async {
+    final r = await _client.get('/goals/by-date', query: {'date': dateIso});
+    return NutritionGoalResponse.fromJson(_safeJsonMap(r.body));
+  }
+
+  Future<List<NutritionGoalResponse>> goalsAll() async {
+    final r = await _client.get('/goals/all');
+    return _safeJsonList(r.body)
+        .map((e) => NutritionGoalResponse.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<NutritionGoalResponse> goalsUpdate(
+    int id, {
+    required String goalType,
+    int? dailyCalories,
+    int? proteinG,
+    int? carbsG,
+    int? fatG,
+    String? startDateIso,
+    String? endDateIso,
+  }) async {
+    final r = await _client.put(
+      '/goals/$id/edit',
+      body: {
+        'goalType': goalType,
+        'dailyCalories': dailyCalories,
+        'proteinG': proteinG,
+        'carbsG': carbsG,
+        'fatG': fatG,
+        if (startDateIso != null) 'startDate': startDateIso,
+        if (endDateIso != null) 'endDate': endDateIso,
+      },
+    );
+    return NutritionGoalResponse.fromJson(_safeJsonMap(r.body));
+  }
+
+  Future<void> goalsDelete(int id) async {
+    await _client.delete('/goals/$id/delete');
   }
 
   Future<DailyNutritionSummaryResponse> summaryDay({String? dateIso}) async {

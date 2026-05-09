@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 /// Base URL for the Spring Boot API (default port 8080).
 ///
@@ -18,7 +18,11 @@ class ApiConfig {
       : _defaultUrl;
 
   static String get _defaultUrl {
-    if (Platform.isAndroid) return 'http://10.0.2.2:8080';
-    return 'http://10.0.2.2:8080';
+    if (kIsWeb) return 'http://127.0.0.1:8080';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      // Android emulator maps host machine localhost to 10.0.2.2
+      return 'http://10.0.2.2:8080';
+    }
+    return 'http://127.0.0.1:8080';
   }
 }

@@ -23,6 +23,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late CalBalanceApi _api;
   int _index = 0;
+  /// Bumped whenever the user opens "Resumen día" so [SummaryPage] remounts and reloads data.
+  int _summaryRemountKey = 0;
 
   @override
   void didChangeDependencies() {
@@ -43,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPage() {
     switch (_index) {
-      case 0: return const SummaryPage();
+      case 0: return SummaryPage(key: ValueKey(_summaryRemountKey));
       case 1: return const MealsPage();
       case 2: return const FoodsPage();
       case 3: return const DishesPage();
@@ -51,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 5: return const GoalsPage();
       case 6: return ProfilePage(onLogout: widget.onLogout);
       case 7: return const PatataPage();
-      default: return const SummaryPage();
+      default: return SummaryPage(key: ValueKey(_summaryRemountKey));
     }
   }
 
@@ -88,7 +90,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 selected: i == _index,
                 onTap: () {
                   Navigator.of(context).pop();
-                  if (_index != i) setState(() => _index = i);
+                  setState(() {
+                    if (i == 0) _summaryRemountKey++;
+                    _index = i;
+                  });
                 },
               ),
           ],

@@ -90,6 +90,80 @@ class _ProgressPageState extends State<ProgressPage> {
     }
   }
 
+  Future<void> _edit(BodyProgressResponse b) async {
+    if (b.id == null || !mounted) return;
+    final w = TextEditingController(
+      text: b.weightKg == null ? '' : (b.weightKg == b.weightKg!.roundToDouble() ? '${b.weightKg!.round()}' : '${b.weightKg}'),
+    );
+    final fat = TextEditingController(
+      text: b.bodyFatPercent == null
+          ? ''
+          : (b.bodyFatPercent == b.bodyFatPercent!.roundToDouble()
+              ? '${b.bodyFatPercent!.round()}'
+              : '${b.bodyFatPercent}'),
+    );
+    final mus = TextEditingController(
+      text: b.muscleMassKg == null
+          ? ''
+          : (b.muscleMassKg == b.muscleMassKg!.roundToDouble()
+              ? '${b.muscleMassKg!.round()}'
+              : '${b.muscleMassKg}'),
+    );
+
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Editar registro · ${b.recordedAt ?? ''}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: w,
+                decoration: const InputDecoration(labelText: 'Peso kg'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              TextField(
+                controller: fat,
+                decoration: const InputDecoration(labelText: '% grasa (opcional)'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              TextField(
+                controller: mus,
+                decoration: const InputDecoration(labelText: 'Masa muscular kg (opcional)'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
+          ],
+        ),
+      );
+
+      if (ok != true || !mounted) return;
+
+      final wv = double.tryParse(w.text.replaceAll(',', '.'));
+      if (wv == null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Peso inválido')));
+        return;
+      }
+      final fv = fat.text.trim().isEmpty ? null : double.tryParse(fat.text.replaceAll(',', '.'));
+      final mv = mus.text.trim().isEmpty ? null : double.tryParse(mus.text.replaceAll(',', '.'));
+
+      await _api.progressUpdate(b.id!, weightKg: wv, bodyFatPercent: fv, muscleMassKg: mv);
+      if (mounted) {
+        await _load();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registro actualizado')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      scheduleDisposeTextControllers([w, fat, mus]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -124,6 +198,8 @@ class _ProgressPageState extends State<ProgressPage> {
       child: ListTile(
         title: Text('${b.weightKg ?? '-'} kg · ${b.recordedAt ?? ''}'),
         subtitle: Text('Grasa ${b.bodyFatPercent ?? '-'}% · Músculo ${b.muscleMassKg ?? '-'} kg'),
+        trailing: b.id == null ? null : const Icon(Icons.edit_outlined),
+        onTap: b.id == null ? null : () => _edit(b),
       ),
     );
   }

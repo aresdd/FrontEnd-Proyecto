@@ -354,7 +354,7 @@ class NutritionGoalResponse {
     required this.carbsG,
     required this.fatG,
     required this.startDate,
-    required this.active,
+    required this.endDate,
   });
 
   final int? id;
@@ -364,7 +364,7 @@ class NutritionGoalResponse {
   final int? carbsG;
   final int? fatG;
   final String? startDate;
-  final bool? active;
+  final String? endDate;
 
   factory NutritionGoalResponse.fromJson(Map<String, dynamic> j) {
     return NutritionGoalResponse(
@@ -375,7 +375,7 @@ class NutritionGoalResponse {
       carbsG: _toInt(j['carbsG']),
       fatG: _toInt(j['fatG']),
       startDate: j['startDate']?.toString(),
-      active: j['active'] as bool?,
+      endDate: j['endDate']?.toString(),
     );
   }
 }
