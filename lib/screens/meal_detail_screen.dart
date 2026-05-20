@@ -5,6 +5,13 @@ import '../models/models.dart';
 import '../services/calbalance_api.dart';
 import '../utils/dialog_controllers.dart';
 import '../widgets/add_meal_item_dialog.dart';
+import '../widgets/dish_info_sheet.dart';
+
+String _formatGramsDisplay(double? g) {
+  if (g == null) return '-';
+  if ((g - g.round()).abs() < 1e-6) return '${g.round()}';
+  return g.toStringAsFixed(1);
+}
 
 class MealDetailScreen extends StatefulWidget {
   const MealDetailScreen({super.key, required this.mealId});
@@ -20,6 +27,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   bool _didInit = false;
 
   MealResponse? _meal;
+  Map<int, DishResponse> _dishesById = {};
   bool _loading = true;
   String? _error;
 
@@ -37,13 +45,43 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     if (!mounted) return;
     setState(() { _loading = true; _error = null; });
     try {
-      final m = await _api.mealsGetById(widget.mealId);
-      if (mounted) setState(() => _meal = m);
+      final mealFuture = _api.mealsGetById(widget.mealId);
+      final dishesFuture = _api.dishesList();
+      final m = await mealFuture;
+      final dishes = await dishesFuture;
+      if (!mounted) return;
+      final byId = <int, DishResponse>{};
+      for (final d in dishes) {
+        final id = d.id;
+        if (id != null) byId[id] = d;
+      }
+      setState(() {
+        _meal = m;
+        _dishesById = byId;
+      });
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _showDishInfo(MealItemResponse item) {
+    final id = item.dishId;
+    if (id == null) return;
+    final dish = _dishesById[id];
+    if (dish == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontró el plato. Tira para actualizar.')),
+      );
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => DishInfoSheet(dish: dish, mealPortion: item),
+    );
   }
 
   Future<void> _addItem() async {
@@ -83,7 +121,14 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       );
       if (ok != true || !mounted) return;
       final g = double.tryParse(ctrl.text.trim().replaceAll(',', '.'));
-      if (g == null) return;
+      if (g == null || g <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Introduce una cantidad en gramos mayor que 0.')),
+          );
+        }
+        return;
+      }
       await _api.mealItemsUpdateGrams(item.id!, g);
       if (mounted) _load();
     } catch (e) {
@@ -91,6 +136,18 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     } finally {
       scheduleDisposeTextControllers([ctrl]);
     }
+  }
+
+  String _appBarTitle() {
+    if (_loading) return 'Comida';
+    final m = _meal;
+    if (m == null) return 'Comida';
+    final type = m.mealType?.trim();
+    final date = m.mealDate?.trim();
+    final parts = <String>[];
+    if (type != null && type.isNotEmpty) parts.add(type);
+    if (date != null && date.isNotEmpty) parts.add(date);
+    return parts.isEmpty ? 'Comida' : parts.join(' · ');
   }
 
   Future<void> _deleteItem(MealItemResponse item) async {
@@ -119,7 +176,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Comida #${widget.mealId}'),
+        title: Text(_appBarTitle()),
         actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
       ),
       floatingActionButton: FloatingActionButton(onPressed: _addItem, child: const Icon(Icons.add)),
@@ -141,19 +198,39 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                         if (_meal!.items.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Sin ítems. Pulsa + para añadir.')),
                         ..._meal!.items.map((it) {
                           final isDish = it.dishId != null;
+                          final apiDishName = it.dishName?.trim();
+                          final apiFoodName = it.foodName?.trim();
+                          final dishNameFallback =
+                              (isDish && it.dishId != null) ? _dishesById[it.dishId!]?.name?.trim() : null;
+                          final label = isDish
+                              ? ((apiDishName != null && apiDishName.isNotEmpty)
+                                  ? apiDishName
+                                  : (dishNameFallback != null && dishNameFallback.isNotEmpty)
+                                      ? dishNameFallback
+                                      : 'Plato')
+                              : ((apiFoodName != null && apiFoodName.isNotEmpty)
+                                  ? apiFoodName
+                                  : 'Alimento');
                           return Card(
                             child: ListTile(
-                              title: Text('food ${it.foodId ?? '-'} · dish ${it.dishId ?? '-'} · ${it.grams ?? '-'} g'),
-                              subtitle: Text('kcal ${it.calories?.toStringAsFixed(1) ?? '-'} · P ${it.protein?.toStringAsFixed(1) ?? '-'}'),
+                              leading: Icon(
+                                isDish ? Icons.dinner_dining_rounded : Icons.restaurant_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              title: Text('$label · ${_formatGramsDisplay(it.grams)} g'),
+                              subtitle: Text(
+                                'kcal ${it.calories?.toStringAsFixed(1) ?? '-'} · P ${it.protein?.toStringAsFixed(1) ?? '-'} · C ${it.carbs?.toStringAsFixed(1) ?? '-'} · G ${it.fat?.toStringAsFixed(1) ?? '-'}',
+                              ),
+                              onTap: isDish ? () => _showDishInfo(it) : null,
                               trailing: PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert_rounded),
                                 onSelected: (v) {
                                   if (v == 'e') _editGrams(it);
                                   if (v == 'd') _deleteItem(it);
                                 },
-                                itemBuilder: (_) => [
-                                  if (!isDish)
-                                    const PopupMenuItem(value: 'e', child: Text('Gramos')),
-                                  const PopupMenuItem(value: 'd', child: Text('Eliminar')),
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(value: 'e', child: Text('Editar gramos')),
+                                  PopupMenuItem(value: 'd', child: Text('Eliminar')),
                                 ],
                               ),
                             ),

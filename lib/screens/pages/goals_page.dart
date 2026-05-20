@@ -5,6 +5,7 @@ import '../../models/models.dart';
 import '../../services/calbalance_api.dart';
 import '../../utils/date_fmt.dart';
 import '../../utils/dialog_controllers.dart';
+import '../../widgets/section_header.dart';
 
 class GoalsPage extends StatefulWidget {
   const GoalsPage({super.key});
@@ -220,24 +221,44 @@ class _GoalsPageState extends State<GoalsPage> {
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         children: [
           Row(children: [
-            FilledButton.tonalIcon(
-              onPressed: () => _upsertGoal(),
-              icon: const Icon(Icons.add),
-              label: const Text('Crear objetivo'),
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: () => _upsertGoal(),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Crear objetivo'),
+              ),
             ),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+            IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              onPressed: _load,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
           ]),
-          if (_loading) const LinearProgressIndicator(),
+          if (_loading) LinearProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+            minHeight: 3,
+          ),
           if (_error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
           if (_current != null) ...[
-            const SizedBox(height: 8),
-            Text('Objetivo actual', style: Theme.of(context).textTheme.titleMedium),
+            SectionHeader(
+              title: 'Objetivo vigente',
+              subtitle: 'El que aplica a la fecha de hoy',
+              icon: Icons.flag_rounded,
+            ),
             Card(
               child: ListTile(
-                title: Text(_current!.goalType ?? ''),
+                contentPadding: const EdgeInsets.all(16),
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                  child: Icon(Icons.flag_rounded, color: Theme.of(context).colorScheme.primary),
+                ),
+                title: Text(_current!.goalType ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text(
                   'kcal ${_current!.dailyCalories ?? '-'} · P ${_current!.proteinG ?? '-'} · C ${_current!.carbsG ?? '-'} · G ${_current!.fatG ?? '-'}\n'
                   'inicio ${_current!.startDate ?? '-'} · fin ${_current!.endDate ?? '-'}',
@@ -245,8 +266,11 @@ class _GoalsPageState extends State<GoalsPage> {
               ),
             ),
           ],
-          const Divider(height: 24),
-          Text('Historial de objetivos', style: Theme.of(context).textTheme.titleMedium),
+          SectionHeader(
+            title: 'Historial de objetivos',
+            subtitle: 'Editar o eliminar rangos anteriores',
+            icon: Icons.history_rounded,
+          ),
           if (!_loading && _all.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No hay objetivos configurados.')),
           ..._all.map(

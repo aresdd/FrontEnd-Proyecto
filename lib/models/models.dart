@@ -183,6 +183,8 @@ class MealItemResponse {
     required this.mealId,
     required this.foodId,
     required this.dishId,
+    required this.foodName,
+    required this.dishName,
     required this.grams,
     required this.calories,
     required this.protein,
@@ -194,6 +196,8 @@ class MealItemResponse {
   final int? mealId;
   final int? foodId;
   final int? dishId;
+  final String? foodName;
+  final String? dishName;
   final double? grams;
   final double? calories;
   final double? protein;
@@ -206,6 +210,8 @@ class MealItemResponse {
       mealId: _toInt(j['mealId']),
       foodId: _toInt(j['foodId']),
       dishId: _toInt(j['dishId']),
+      foodName: j['foodName']?.toString(),
+      dishName: j['dishName']?.toString(),
       grams: _toDouble(j['grams']),
       calories: _toDouble(j['calories']),
       protein: _toDouble(j['protein']),
@@ -284,6 +290,26 @@ class FoodsResponse {
   }
 }
 
+class DishIngredientLine {
+  DishIngredientLine({
+    required this.foodId,
+    required this.foodName,
+    required this.grams,
+  });
+
+  final int? foodId;
+  final String? foodName;
+  final double? grams;
+
+  factory DishIngredientLine.fromJson(Map<String, dynamic> j) {
+    return DishIngredientLine(
+      foodId: _toInt(j['foodId']),
+      foodName: j['foodName']?.toString(),
+      grams: _toDouble(j['grams']),
+    );
+  }
+}
+
 class DishResponse {
   DishResponse({
     required this.id,
@@ -294,6 +320,7 @@ class DishResponse {
     required this.carbs,
     required this.fat,
     required this.totalGrams,
+    required this.ingredients,
   });
 
   final int? id;
@@ -304,8 +331,10 @@ class DishResponse {
   final double? carbs;
   final double? fat;
   final double? totalGrams;
+  final List<DishIngredientLine> ingredients;
 
   factory DishResponse.fromJson(Map<String, dynamic> j) {
+    final rawIng = j['ingredients'] as List<dynamic>? ?? [];
     return DishResponse(
       id: _toInt(j['id']),
       name: j['name']?.toString(),
@@ -315,6 +344,9 @@ class DishResponse {
       carbs: _toDouble(j['carbs']),
       fat: _toDouble(j['fat']),
       totalGrams: _toDouble(j['totalGrams']),
+      ingredients: rawIng
+          .map((e) => DishIngredientLine.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

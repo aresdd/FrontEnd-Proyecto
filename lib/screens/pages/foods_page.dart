@@ -127,7 +127,13 @@ class _FoodsPageState extends State<FoodsPage> {
               final f = _results[i];
               return ListTile(
                 title: Text(f.name ?? ''),
-                subtitle: Text('id ${f.id} · ${f.source ?? ''} · kcal/100g ${f.caloriesPer100g ?? '-'}'),
+                subtitle: Text(
+                  [
+                    if ((f.brand ?? '').isNotEmpty) f.brand!,
+                    if ((f.source ?? '').isNotEmpty) f.source!,
+                    'kcal/100g ${f.caloriesPer100g?.toStringAsFixed(0) ?? '-'}',
+                  ].where((s) => s.isNotEmpty).join(' · '),
+                ),
               );
             },
           ),

@@ -37,7 +37,10 @@ class _MealsPageState extends State<MealsPage> {
 
   Future<void> _load() async {
     if (!mounted) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final d = await _api.mealsDaySummary(_iso);
       if (mounted) setState(() => _day = d);
@@ -58,7 +61,10 @@ class _MealsPageState extends State<MealsPage> {
           title: const Text('Nueva comida'),
           content: TextField(
             controller: typeCtrl,
-            decoration: const InputDecoration(labelText: 'Tipo (ej. DESAYUNO, COMIDA, CENA)'),
+            decoration: const InputDecoration(
+              labelText: 'Tipo (ej. DESAYUNO, COMIDA, CENA)',
+              prefixIcon: Icon(Icons.restaurant_rounded),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
@@ -89,53 +95,147 @@ class _MealsPageState extends State<MealsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(child: Text('Día: $_iso', style: Theme.of(context).textTheme.titleMedium)),
-              FilledButton.tonalIcon(
-                onPressed: _createMeal,
-                icon: const Icon(Icons.add),
-                label: const Text('Nueva'),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  scheme.primary.withValues(alpha: 0.12),
+                  scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                ],
               ),
-              IconButton(
-                onPressed: () async {
-                  final p = await showDatePicker(
-                    context: context, initialDate: _date,
-                    firstDate: DateTime(2020), lastDate: DateTime(2100),
-                  );
-                  if (p != null && mounted) { setState(() => _date = p); _load(); }
-                },
-                icon: const Icon(Icons.date_range),
-              ),
-              IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-            ],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Comidas del día',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      Text(
+                        _iso,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: _createMeal,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Nueva'),
+                ),
+                IconButton(
+                  tooltip: 'Elegir fecha',
+                  onPressed: () async {
+                    final p = await showDatePicker(
+                      context: context,
+                      initialDate: _date,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (p != null && mounted) {
+                      setState(() => _date = p);
+                      _load();
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_month_rounded),
+                ),
+                IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: scheme.primaryContainer,
+                    foregroundColor: scheme.onPrimaryContainer,
+                  ),
+                  onPressed: _load,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
           ),
         ),
-        if (_loading) const LinearProgressIndicator(),
+        if (_loading) LinearProgressIndicator(color: scheme.primary, minHeight: 3),
         if (_error != null)
-          Padding(padding: const EdgeInsets.all(8), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(_error!, style: TextStyle(color: scheme.error)),
+          ),
         Expanded(
           child: RefreshIndicator(
+            color: scheme.primary,
             onRefresh: _load,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
+                if (_day != null && _day!.meals.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Total día · ${_day!.totals.calories?.toStringAsFixed(0) ?? '-'} kcal',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
                 if (_day != null)
-                  ..._day!.meals.map((row) => ListTile(
-                    title: Text(row.mealType ?? 'Comida'),
-                    subtitle: Text('id ${row.mealId}'),
-                    onTap: row.mealId == null ? null : () {
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => MealDetailScreen(mealId: row.mealId!),
-                      ));
-                    },
-                  )),
+                  ..._day!.meals.map(
+                    (row) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Card(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: CircleAvatar(
+                            backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                            foregroundColor: scheme.primary,
+                            child: const Icon(Icons.restaurant_rounded, size: 20),
+                          ),
+                          title: Text(
+                            row.mealType ?? 'Comida',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            '${row.calories?.toStringAsFixed(0) ?? '-'} kcal',
+                          ),
+                          trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+                          onTap: row.mealId == null
+                              ? null
+                              : () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => MealDetailScreen(mealId: row.mealId!),
+                                    ),
+                                  );
+                                },
+                        ),
+                      ),
+                    ),
+                  ),
                 if (_day == null && !_loading && _error == null)
-                  const Padding(padding: EdgeInsets.all(24), child: Text('Sin comidas hoy. Crea una.')),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Sin comidas hoy. Crea una.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
               ],
             ),
           ),

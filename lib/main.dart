@@ -7,6 +7,9 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/api_client.dart';
 import 'services/calbalance_api.dart';
+import 'services/theme_preferences.dart';
+import 'theme/app_colors.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,23 +21,23 @@ void main() {
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Material(
-      color: Colors.white,
+      color: AppColors.neutral100,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: AppColors.accentRose),
             const SizedBox(height: 12),
             Text(
               'Algo salió mal',
-              style: TextStyle(fontSize: 18, color: Colors.grey[800]),
+              style: TextStyle(fontSize: 18, color: AppColors.neutral900),
             ),
             const SizedBox(height: 8),
             Text(
               details.exceptionAsString(),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: AppColors.neutral600),
             ),
           ],
         ),
@@ -62,21 +65,25 @@ class _CalBalanceAppState extends State<CalBalanceApp> {
   late final CalBalanceApi _api = CalBalanceApi(_client);
   bool _checking = true;
   bool _loggedIn = false;
+  ThemeMode _themeMode = ThemeMode.light;
 
   @override
   void initState() {
     super.initState();
-    _restoreSession();
+    _bootstrap();
   }
 
-  Future<void> _restoreSession() async {
-    final t = await _client.session.getToken();
-    if (mounted) {
-      setState(() {
-        _loggedIn = t != null && t.isNotEmpty;
-        _checking = false;
-      });
-    }
+  Future<void> _bootstrap() async {
+    final tokenFuture = _client.session.getToken();
+    final themeFuture = ThemePreferences.load();
+    final token = await tokenFuture;
+    final theme = await themeFuture;
+    if (!mounted) return;
+    setState(() {
+      _loggedIn = token != null && token.isNotEmpty;
+      _themeMode = theme;
+      _checking = false;
+    });
   }
 
   void _onAuthChanged() {
@@ -85,6 +92,11 @@ class _CalBalanceAppState extends State<CalBalanceApp> {
 
   void _onLogout() {
     if (mounted) setState(() => _loggedIn = false);
+  }
+
+  void _setThemeMode(ThemeMode mode) {
+    setState(() => _themeMode = mode);
+    ThemePreferences.save(mode);
   }
 
   @override
@@ -98,16 +110,20 @@ class _CalBalanceAppState extends State<CalBalanceApp> {
     return AppScope(
       apiClient: _client,
       api: _api,
+      themeMode: _themeMode,
+      onThemeModeChanged: _setThemeMode,
       child: MaterialApp(
         title: 'CalBalance',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-          useMaterial3: true,
-        ),
+        themeMode: _themeMode,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
         home: _checking
-            ? const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
+            ? Scaffold(
+                backgroundColor: AppColors.skyLight,
+                body: Center(
+                  child: CircularProgressIndicator(color: AppColors.skyDark),
+                ),
               )
             : _loggedIn
                 ? HomeScreen(onLogout: _onLogout)

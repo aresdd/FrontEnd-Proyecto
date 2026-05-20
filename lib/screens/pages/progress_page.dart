@@ -4,6 +4,8 @@ import '../../app/app_scope.dart';
 import '../../models/models.dart';
 import '../../services/calbalance_api.dart';
 import '../../utils/dialog_controllers.dart';
+import '../../widgets/charts/weight_line_chart.dart';
+import '../../widgets/section_header.dart';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
@@ -166,25 +168,66 @@ class _ProgressPageState extends State<ProgressPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return RefreshIndicator(
+      color: scheme.primary,
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         children: [
-          Row(children: [
-            FilledButton.tonalIcon(onPressed: _add, icon: const Icon(Icons.add), label: const Text('Nuevo registro')),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-          ]),
-          if (_loading) const LinearProgressIndicator(),
-          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: _add,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Nuevo registro'),
+                ),
+              ),
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: scheme.primaryContainer,
+                  foregroundColor: scheme.onPrimaryContainer,
+                ),
+                onPressed: _load,
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+            ],
+          ),
+          if (_loading) LinearProgressIndicator(color: scheme.primary, minHeight: 3),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(_error!, style: TextStyle(color: scheme.error)),
+            ),
           if (_latest != null) ...[
-            const SizedBox(height: 8),
-            Text('Último registro', style: Theme.of(context).textTheme.titleMedium),
+            SectionHeader(
+              title: 'Último registro',
+              subtitle: 'Tu último peso y composición registrados',
+              icon: Icons.monitor_weight_rounded,
+            ),
             _card(_latest!),
           ],
-          const Divider(height: 24),
-          Text('Historial', style: Theme.of(context).textTheme.titleMedium),
+          SectionHeader(
+            title: 'Tendencia de peso',
+            subtitle: 'Evolución según tu historial',
+            icon: Icons.show_chart_rounded,
+          ),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: WeightLineChart(entries: _all),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SectionHeader(
+            title: 'Historial',
+            subtitle: 'Toca una fila para corregir datos',
+            icon: Icons.history_rounded,
+          ),
           if (_all.isEmpty && !_loading)
             const Padding(padding: EdgeInsets.all(16), child: Text('Sin registros todavía')),
           ..._all.map(_card),
@@ -194,11 +237,27 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   Widget _card(BodyProgressResponse b) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       child: ListTile(
-        title: Text('${b.weightKg ?? '-'} kg · ${b.recordedAt ?? ''}'),
-        subtitle: Text('Grasa ${b.bodyFatPercent ?? '-'}% · Músculo ${b.muscleMassKg ?? '-'} kg'),
-        trailing: b.id == null ? null : const Icon(Icons.edit_outlined),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        leading: CircleAvatar(
+          backgroundColor: scheme.primary.withValues(alpha: 0.12),
+          foregroundColor: scheme.primary,
+          child: Text(
+            '${b.weightKg?.toStringAsFixed(0) ?? '?'}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ),
+        title: Text(
+          '${b.weightKg ?? '-'} kg',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '${b.recordedAt ?? ''}\nGrasa ${b.bodyFatPercent ?? '-'}% · Músculo ${b.muscleMassKg ?? '-'} kg',
+        ),
+        isThreeLine: true,
+        trailing: b.id == null ? null : Icon(Icons.edit_outlined, color: scheme.primary),
         onTap: b.id == null ? null : () => _edit(b),
       ),
     );

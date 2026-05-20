@@ -309,13 +309,4 @@ class CalBalanceApi {
     );
     return DailyNutritionSummaryResponse.fromJson(_safeJsonMap(r.body));
   }
-
-  Future<String> patataTest() async {
-    final r = await _client.get('/patata/test');
-    try {
-      final decoded = jsonDecode(r.body.trim());
-      if (decoded is String) return decoded;
-    } catch (_) {}
-    return r.body.trim();
-  }
 }

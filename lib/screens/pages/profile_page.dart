@@ -4,6 +4,7 @@ import '../../app/app_scope.dart';
 import '../../models/models.dart';
 import '../../services/calbalance_api.dart';
 import '../../utils/date_fmt.dart';
+import '../../widgets/section_header.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.onLogout});
@@ -185,22 +186,33 @@ class _ProfilePageState extends State<ProfilePage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Perfil', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 8),
-          if (_loading) const LinearProgressIndicator(),
+          SectionHeader(
+            title: 'Tu perfil',
+            subtitle: 'Datos de cuenta y hábitos',
+            icon: Icons.person_rounded,
+          ),
+          if (_loading) LinearProgressIndicator(color: theme.colorScheme.primary, minHeight: 3),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
             ),
-          if (_email != null) ...[
-            const SizedBox(height: 12),
-            Text('Email', style: theme.textTheme.labelLarge),
-            Text(_email!, style: theme.textTheme.bodyLarge),
-          ],
-          const SizedBox(height: 20),
-          Text('Datos personales', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
+          if (_email != null)
+            Card(
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  child: Icon(Icons.mail_outline_rounded, color: theme.colorScheme.primary),
+                ),
+                title: const Text('Email'),
+                subtitle: Text(_email!, style: theme.textTheme.bodyLarge),
+              ),
+            ),
+          SectionHeader(
+            title: 'Datos personales',
+            subtitle: 'Altura, edad y nivel de actividad',
+            icon: Icons.edit_calendar_rounded,
+          ),
           TextField(
             controller: _heightCtrl,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -268,9 +280,12 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: const Icon(Icons.refresh),
             label: const Text('Recargar datos'),
           ),
-          const SizedBox(height: 32),
-          Text('Cuenta', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Cuenta',
+            subtitle: 'Zona sensible · acciones irreversibles',
+            icon: Icons.warning_amber_rounded,
+          ),
           Text(
             'Desactivar tu cuenta en el servidor. Los datos se conservan, pero no podrás acceder de nuevo.',
             style: theme.textTheme.bodySmall?.copyWith(

@@ -89,7 +89,10 @@ class _DishesPageState extends State<DishesPage> {
               itemCount: _list.length,
               itemBuilder: (_, i) {
                 final d = _list[i];
-                return ListTile(title: Text(d.name ?? ''), subtitle: Text('id ${d.id} · kcal ${d.calories?.toStringAsFixed(0) ?? '-'}'));
+                return ListTile(
+                  title: Text(d.name ?? ''),
+                  subtitle: Text('kcal ${d.calories?.toStringAsFixed(0) ?? '-'} · P ${d.protein?.toStringAsFixed(0) ?? '-'} · C ${d.carbs?.toStringAsFixed(0) ?? '-'} · G ${d.fat?.toStringAsFixed(0) ?? '-'}'),
+                );
               },
             ),
           ),
