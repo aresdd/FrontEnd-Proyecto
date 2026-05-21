@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/app_scope.dart';
 import '../services/calbalance_api.dart';
 import '../theme/app_colors.dart';
+import '../widgets/calbalance_logo.dart';
 import 'pages/dishes_page.dart';
 import 'pages/foods_page.dart';
 import 'pages/goals_page.dart';
@@ -104,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             DrawerHeader(
               margin: EdgeInsets.zero,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              padding: EdgeInsets.zero,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -114,30 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       : [AppColors.sky, AppColors.skyDark],
                 ),
               ),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CalBalance',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Nutrición y hábitos',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+              child: const CalBalanceDrawerHeader(),
             ),
             Expanded(
               child: ListView(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../services/calbalance_api.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/email_validation.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, required this.onRegistered});
@@ -19,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _busy = false;
+  String? _emailError;
 
   @override
   void didChangeDependencies() {
@@ -41,7 +43,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submit() async {
-    setState(() => _busy = true);
+    final name = _name.text.trim();
+    final emailErr = registrationEmailError(_email.text);
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Introduce tu nombre')),
+      );
+      return;
+    }
+    if (emailErr != null) {
+      setState(() => _emailError = emailErr);
+      return;
+    }
+    if (_password.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La contraseña debe tener al menos 6 caracteres')),
+      );
+      return;
+    }
+
+    setState(() {
+      _emailError = null;
+      _busy = true;
+    });
     try {
       await _api.register(
         email: _email.text.trim(),
@@ -131,12 +155,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _email,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Email',
-                            prefixIcon: Icon(Icons.mail_outline_rounded),
+                            hintText: 'nombre@gmail.com',
+                            prefixIcon: const Icon(Icons.mail_outline_rounded),
+                            errorText: _emailError,
                           ),
                           keyboardType: TextInputType.emailAddress,
                           autocorrect: false,
+                          onChanged: (_) {
+                            if (_emailError != null) {
+                              setState(() => _emailError = null);
+                            }
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextField(

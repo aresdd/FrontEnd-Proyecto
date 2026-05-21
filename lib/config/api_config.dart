@@ -8,6 +8,9 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 /// - Android emulator: `http://10.0.2.2:8080`
 /// - Everything else (desktop, iOS sim): `http://127.0.0.1:8080`
 /// - Physical device: pass your LAN IP via dart-define.
+/// 
+/// 
+/// 
 /// -- desplegado: https://general-production-c671.up.railway.app
 /// 
 class ApiConfig {
